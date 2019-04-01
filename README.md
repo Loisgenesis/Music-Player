@@ -1,6 +1,6 @@
 # music_player
 
-A new Flutter application.
+Music player app
 
 ## Getting Started
 
