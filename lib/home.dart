@@ -152,7 +152,7 @@ class HomeState extends State<Home> {
         singlePage(datas);
       },
       child: new Padding(
-        padding: EdgeInsets.all(20.0),
+        padding: EdgeInsets.only(left: 20.0,right: 20.0,top: 5.0,bottom: 5.0),
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
@@ -303,6 +303,7 @@ class HomeState extends State<Home> {
       for (var i = 0; i < dat.length; i++) {
         var details = Data.getPostFrmJSONPost(dat[i]);
         data.add(details);
+
       }
       setState(() {
         _isRequestSent = false;

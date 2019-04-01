@@ -16,12 +16,12 @@ dependencies:
   flutter:
     sdk: flutter
   intl: ^0.15.7
-  cached_network_image: ^0.4.2
+  cached_network_image: ^0.7.0
   google_maps_webservice: ^0.0.7
   url_launcher: ^5.0.2
   shimmer: ^0.0.5
   xml2json: ^3.0.3
-
+  audioplayers: ^0.10.1
 
 
   # The following adds the Cupertino Icons font to your application.

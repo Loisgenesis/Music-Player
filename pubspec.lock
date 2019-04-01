@@ -22,6 +22,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.8"
+  audioplayers:
+    dependency: "direct main"
+    description:
+      name: audioplayers
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.10.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -35,7 +42,7 @@ packages:
       name: cached_network_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.2"
+    version: "0.7.0"
   charcode:
     dependency: transitive
     description:
@@ -91,7 +98,7 @@ packages:
       name: flutter_cache_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.2"
+    version: "0.3.2"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -166,7 +173,7 @@ packages:
       name: path_provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.1"
+    version: "0.5.0+1"
   pedantic:
     dependency: transitive
     description:
@@ -188,13 +195,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
-  shared_preferences:
-    dependency: transitive
-    description:
-      name: shared_preferences
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.4.3"
   shimmer:
     dependency: "direct main"
     description:
@@ -214,6 +214,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.3"
+  sqflite:
+    dependency: transitive
+    description:
+      name: sqflite
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.1"
   stack_trace:
     dependency: transitive
     description:
@@ -241,7 +248,7 @@ packages:
       name: synchronized
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.3+2"
+    version: "2.1.0"
   term_glyph:
     dependency: transitive
     description:
@@ -276,7 +283,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.3"
+    version: "2.0.0"
   vector_math:
     dependency: transitive
     description:
