@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:music_player/data.dart';
-import 'package:music_player/home.dart';
 import 'package:music_player/my_colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 
@@ -27,11 +26,7 @@ class SinglePageState extends State<SinglePage> {
   Duration _position;
 
   PlayerState _playerState = PlayerState.stopped;
-  StreamSubscription _durationSubscription;
-  StreamSubscription _positionSubscription;
-  StreamSubscription _playerCompleteSubscription;
-  StreamSubscription _playerErrorSubscription;
-  StreamSubscription _playerStateSubscription;
+  StreamSubscription streamSubscription;
 
   get _durationText => _duration?.toString()?.split('.')?.first ?? '';
   get _positionText => _position?.toString()?.split('.')?.first ?? '';
@@ -46,11 +41,7 @@ class SinglePageState extends State<SinglePage> {
   @override
   void dispose() {
     _audioPlayer.stop();
-    _durationSubscription?.cancel();
-    _positionSubscription?.cancel();
-    _playerCompleteSubscription?.cancel();
-    _playerErrorSubscription?.cancel();
-    _playerStateSubscription?.cancel();
+    streamSubscription?.cancel();
     super.dispose();
   }
 
@@ -129,11 +120,11 @@ class SinglePageState extends State<SinglePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
                           new Text(
-                            _position != null ? _positionText : "",
+                            _position != null ? _positionText : "0:00:00",
                             style: new TextStyle(fontSize: 20.0),
                           ),
                           new Text(
-                            _duration != null ? _durationText : "",
+                            _duration != null ? _durationText : "0:00:00",
                             style: new TextStyle(fontSize: 20.0),
                           ),
                         ],
@@ -193,6 +184,7 @@ class SinglePageState extends State<SinglePage> {
 
    prev()  async{
     _audioPlayer.stop();
+
     setState(() {
       int i = --widget.index;
       if (i < 0) {
@@ -215,17 +207,17 @@ class SinglePageState extends State<SinglePage> {
   void _initAudioPlayer() {
     _audioPlayer = new AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
 
-    _durationSubscription =
+    streamSubscription =
         _audioPlayer.onDurationChanged.listen((duration) => setState(() {
               _duration = duration;
             }));
 
-    _positionSubscription =
+    streamSubscription =
         _audioPlayer.onAudioPositionChanged.listen((p) => setState(() {
               _position = p;
             }));
 
-    _playerCompleteSubscription =
+    streamSubscription =
         _audioPlayer.onPlayerCompletion.listen((event) {
       _onComplete();
       setState(() {
@@ -235,7 +227,7 @@ class SinglePageState extends State<SinglePage> {
       });
     });
 
-    _playerErrorSubscription = _audioPlayer.onPlayerError.listen((msg) {
+    streamSubscription = _audioPlayer.onPlayerError.listen((msg) {
       setState(() {
         _playerState = PlayerState.stopped;
         _duration = new Duration(seconds: 0);
