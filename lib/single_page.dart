@@ -1,18 +1,59 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:music_player/data.dart';
 import 'package:music_player/home.dart';
 import 'package:music_player/my_colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 
+enum PlayerState { stopped, playing, paused }
+
 class SinglePage extends StatefulWidget {
-  final Data data;
-  SinglePage(this.data);
+  Data data;
+  int index;
+  List<Data> dataList;
+  SinglePage(this.data, this.index, this.dataList);
+
   @override
-  SinglePageState createState() => new SinglePageState();
+  State<StatefulWidget> createState() {
+    return new SinglePageState();
+  }
 }
 
 class SinglePageState extends State<SinglePage> {
+  AudioPlayer _audioPlayer;
+  AudioPlayerState _audioPlayerState;
+  Duration _duration;
+  Duration _position;
 
-  AudioPlayer audioPlayer = new AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
+  PlayerState _playerState = PlayerState.stopped;
+  StreamSubscription _durationSubscription;
+  StreamSubscription _positionSubscription;
+  StreamSubscription _playerCompleteSubscription;
+  StreamSubscription _playerErrorSubscription;
+  StreamSubscription _playerStateSubscription;
+
+  get _durationText => _duration?.toString()?.split('.')?.first ?? '';
+  get _positionText => _position?.toString()?.split('.')?.first ?? '';
+  var actionIcon = "assets/images/play.png";
+  @override
+  void initState() {
+    print("data from single page is ${widget.data}");
+    print("index from single page is ${widget.index}");
+    super.initState();
+    _initAudioPlayer();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.stop();
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _playerCompleteSubscription?.cancel();
+    _playerErrorSubscription?.cancel();
+    _playerStateSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +102,44 @@ class SinglePageState extends State<SinglePage> {
                     style: new TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15.0),
                   ),
-                  new SizedBox(
-                    height: 60.0,
+                  new Column(
+                    children: <Widget>[
+                      new Padding(
+                        padding: new EdgeInsets.all(12.0),
+                        child: new Stack(
+                          children: [
+                            new Slider(
+                              onChanged: null,
+                              value: 1.0,
+                            ),
+                            new Slider(
+                              value: (_position != null &&
+                                      _duration != null &&
+                                      _position.inMilliseconds > 0 &&
+                                      _position.inMilliseconds <
+                                          _duration.inMilliseconds)
+                                  ? _position.inMilliseconds /
+                                      _duration.inMilliseconds
+                                  : 0.0,
+                              onChanged: null,
+                            ),
+                          ],
+                        ),
+                      ),
+                      new Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          new Text(
+                            _position != null ? _positionText : "",
+                            style: new TextStyle(fontSize: 20.0),
+                          ),
+                          new Text(
+                            _duration != null ? _durationText : "",
+                            style: new TextStyle(fontSize: 20.0),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                   new Padding(
                     padding: EdgeInsets.only(left: 30.0, right: 30.0),
@@ -70,11 +147,27 @@ class SinglePageState extends State<SinglePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
                         new IconButton(
-                            icon: Icon(Icons.fast_rewind), onPressed: null),
+                          icon: new Image.asset("assets/images/backward.png"),
+                          onPressed: prev,
+                        ),
                         new IconButton(
-                            icon: Icon(Icons.play_arrow), onPressed: play),
+                            color: Colors.blue,
+                            icon: new Image.asset(actionIcon),
+                            onPressed: () {
+                              setState(() {
+                                if (this.actionIcon ==
+                                    "assets/images/play.png") {
+                                  play();
+                                  this.actionIcon = "assets/images/pause.png";
+                                } else {
+                                  pause();
+                                  this.actionIcon = "assets/images/play.png";
+                                }
+                              });
+                            }),
                         new IconButton(
-                            icon: Icon(Icons.fast_forward), onPressed: null),
+                            icon: new Image.asset("assets/images/forward.png"),
+                            onPressed: next),
                       ],
                     ),
                   )
@@ -86,10 +179,110 @@ class SinglePageState extends State<SinglePage> {
       ),
     );
   }
-  play() async {
-    int result = await audioPlayer.play(widget.data.enclosureUrl);
+
+  Future next() async {
+    _audioPlayer.stop();
+    setState(() {
+      int i = ++widget.index;
+      if (i >= widget.dataList.length) {
+       i = widget.index = 0;
+      }
+      updatePage(i);
+      print("next index is $i");
+    });
+
+  }
+
+  Future prev() async {
+    _audioPlayer.stop();
+    setState(() {
+      int i = --widget.index;
+      if (i < 0) {
+        widget.index = 0;
+        i = widget.index;
+      }
+      updatePage(i);
+      print("previous index is $i");
+    });
+  }
+
+  void updatePage(int index) {
+    widget.index = index;
+    widget.data = widget.dataList[index];
+    setState(() {
+      this.actionIcon = "assets/images/pause.png";
+    });
+    _audioPlayer.play(widget.data.enclosureUrl);
+  }
+
+  void _initAudioPlayer() {
+    _audioPlayer = new AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
+
+    _durationSubscription =
+        _audioPlayer.onDurationChanged.listen((duration) => setState(() {
+              _duration = duration;
+            }));
+
+    _positionSubscription =
+        _audioPlayer.onAudioPositionChanged.listen((p) => setState(() {
+              _position = p;
+            }));
+
+    _playerCompleteSubscription =
+        _audioPlayer.onPlayerCompletion.listen((event) {
+      _onComplete();
+      setState(() {
+        _position = _duration;
+      });
+    });
+
+    _playerErrorSubscription = _audioPlayer.onPlayerError.listen((msg) {
+      setState(() {
+        _playerState = PlayerState.stopped;
+        _duration = new Duration(seconds: 0);
+        _position = new Duration(seconds: 0);
+      });
+    });
+
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _audioPlayerState = state;
+      });
+    });
+  }
+
+  Future<int> play() async {
+    final playPosition = (_position != null &&
+            _duration != null &&
+            _position.inMilliseconds > 0 &&
+            _position.inMilliseconds < _duration.inMilliseconds)
+        ? _position
+        : null;
+    final result = await _audioPlayer.play(widget.data.enclosureUrl,
+        position: playPosition);
+    if (result == 1) setState(() => _playerState = PlayerState.playing);
+    return result;
+  }
+
+  Future<int> pause() async {
+    final result = await _audioPlayer.pause();
+    if (result == 1) setState(() => _playerState = PlayerState.paused);
+    return result;
+  }
+
+  Future<int> stop() async {
+    final result = await _audioPlayer.stop();
     if (result == 1) {
-      // success
+      setState(() {
+        _playerState = PlayerState.stopped;
+        _position = new Duration();
+      });
     }
+    return result;
+  }
+
+  void _onComplete() {
+    setState(() => _playerState = PlayerState.stopped);
   }
 }

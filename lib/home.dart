@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:music_player/data.dart';
 import 'package:music_player/my_colors.dart';
 import 'package:music_player/my_strings.dart';
 import 'package:music_player/single_page.dart';
@@ -71,7 +72,7 @@ class HomeState extends State<Home> {
   var _isRequestSent = true;
   var _isRequestFailed = false;
   var _isRequestConnection = false;
-  List<Data> data = [];
+  List<Data> dataList = [];
   String errorMessage;
   Xml2Json xml2json = new Xml2Json();
   String imageUrl;
@@ -94,7 +95,7 @@ class HomeState extends State<Home> {
             ? _getProgressBar()
             : _isRequestFailed || _isRequestConnection
                 ? retryButton()
-                : data.isEmpty
+                : dataList.isEmpty
                     ? showNoData()
                     : RefreshIndicator(
                         child: new CustomScrollView(
@@ -128,14 +129,14 @@ class HomeState extends State<Home> {
   }
 
   Future<Null> refreshList() async {
-    data.clear();
+    dataList.clear();
     getData();
     return null;
   }
 
   List<Widget> getCompleteUI() {
     List<Widget> widgets = [];
-    for (var i = 0; i < data.length; i++) {
+    for (var i = 0; i < dataList.length; i++) {
       count += 1;
       widgets.add(new Container(
         child: _getCardItems(i, count),
@@ -145,14 +146,15 @@ class HomeState extends State<Home> {
   }
 
   Widget _getCardItems(int position, int count) {
-    Data datas = data[position];
+    Data datas = dataList[position];
     String newTitle = datas.title.replaceAll(r"\", r'');
     return new InkWell(
-      onTap: (){
-        singlePage(datas);
+      onTap: () {
+        singlePage(datas,count);
       },
       child: new Padding(
-        padding: EdgeInsets.only(left: 20.0,right: 20.0,top: 5.0,bottom: 5.0),
+        padding:
+            EdgeInsets.all(20.0),
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
@@ -161,33 +163,16 @@ class HomeState extends State<Home> {
               width: 10.0,
             ),
             new Expanded(child: new Text(newTitle)),
-            PopupMenuButton<String>(
-              //onSelected: showMenuSelection,
-              itemBuilder: (BuildContext context) => <PopupMenuItem<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'Toolbar menu',
-                      child: Text('Open'),
-                    ),
-//              const PopupMenuItem<String>(
-//                value: 'Right here',
-//                child: Text('Right here'),
-//              ),
-//              const PopupMenuItem<String>(
-//                value: 'Hooray!',
-//                child: Text('Hooray!'),
-//              ),
-                  ],
-            ),
           ],
         ),
       ),
     );
   }
-  void singlePage(Data data) {
+  void singlePage(Data data,int position) {
     Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (BuildContext context) => new SinglePage(data),
+          builder: (BuildContext context) => new SinglePage(data,position,dataList),
         ));
   }
 
@@ -302,8 +287,7 @@ class HomeState extends State<Home> {
       var dat = body["rss"]["channel"]['item'] as List;
       for (var i = 0; i < dat.length; i++) {
         var details = Data.getPostFrmJSONPost(dat[i]);
-        data.add(details);
-
+        dataList.add(details);
       }
       setState(() {
         _isRequestSent = false;
@@ -333,7 +317,7 @@ class HomeState extends State<Home> {
   }
 
   void handleRetry() {
-    data.clear();
+    dataList.clear();
     setState(() {
       _isRequestSent = true;
       _isRequestFailed = false;
@@ -343,68 +327,4 @@ class HomeState extends State<Home> {
   }
 }
 
-class Data {
-  String id;
-  String title;
-  String pubDate;
-  String link;
-  String itunesDuration;
-  String itunesAuthor;
-  String itunesExplicit;
-  String itunesSummary;
-  String itunesSubtitle;
-  String desc;
-  String enclosureType;
-  String enclosureUrl;
-  String itunesImage;
 
-  Data(
-      this.id,
-      this.title,
-      this.pubDate,
-      this.link,
-      this.itunesDuration,
-      this.itunesAuthor,
-      this.itunesSummary,
-      this.itunesExplicit,
-      this.itunesSubtitle,
-      this.desc,
-      this.enclosureType,
-      this.enclosureUrl,
-      this.itunesImage);
-
-  static Data getPostFrmJSONPost(dynamic jsonObject) {
-    String id = jsonObject['guid']['\$t'];
-    String title = jsonObject['title']['\$t'];
-    String pubDate = jsonObject['pubDate']['\$t'];
-    String link = jsonObject['link']['\$t'];
-    String itunesDuration = jsonObject['itunes\$duration']['\$t'];
-    String itunesAuthor = jsonObject['itunes\$author']['\$t'];
-    String itunesExplicit = jsonObject['itunes\$explicit']['\$t'];
-    String itunesSummary = jsonObject['itunes\$summary']['\$t'];
-    String itunesSubtitle = jsonObject['itunes\$subtitle']['\$t'];
-    String desc = jsonObject['description']['\$t'];
-    String enclosureType = jsonObject['enclosure']['type'];
-    String enclosureUrl = jsonObject['enclosure']['url'];
-    String itunesImage = jsonObject['itunes\$image']['href'];
-    return new Data(
-        id,
-        title,
-        pubDate,
-        link,
-        itunesDuration,
-        itunesAuthor,
-        itunesSummary,
-        itunesExplicit,
-        itunesSubtitle,
-        desc,
-        enclosureType,
-        enclosureUrl,
-        itunesImage);
-  }
-
-  @override
-  String toString() {
-    return 'Data{id: $id, title: $title, pubDate: $pubDate, link: $link, itunesDuration: $itunesDuration, itunesAuthor: $itunesAuthor, itunesExplicit: $itunesExplicit, itunesSummary: $itunesSummary, itunesSubtitle: $itunesSubtitle, desc: $desc, enclosureType: $enclosureType, enclosureUrl: $enclosureUrl, itunesImage: $itunesImage}';
-  }
-}
