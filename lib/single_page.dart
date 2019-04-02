@@ -38,8 +38,7 @@ class SinglePageState extends State<SinglePage> {
   var actionIcon = "assets/images/play.png";
   @override
   void initState() {
-    print("data from single page is ${widget.data}");
-    print("index from single page is ${widget.index}");
+    print(widget.index);
     super.initState();
     _initAudioPlayer();
   }
@@ -180,7 +179,7 @@ class SinglePageState extends State<SinglePage> {
     );
   }
 
-  Future next() async {
+   next() async  {
     _audioPlayer.stop();
     setState(() {
       int i = ++widget.index;
@@ -188,12 +187,11 @@ class SinglePageState extends State<SinglePage> {
        i = widget.index = 0;
       }
       updatePage(i);
-      print("next index is $i");
     });
 
   }
 
-  Future prev() async {
+   prev()  async{
     _audioPlayer.stop();
     setState(() {
       int i = --widget.index;
@@ -202,14 +200,13 @@ class SinglePageState extends State<SinglePage> {
         i = widget.index;
       }
       updatePage(i);
-      print("previous index is $i");
     });
   }
 
   void updatePage(int index) {
     widget.index = index;
     widget.data = widget.dataList[index];
-    setState(() {
+     setState(() {
       this.actionIcon = "assets/images/pause.png";
     });
     _audioPlayer.play(widget.data.enclosureUrl);
@@ -233,6 +230,8 @@ class SinglePageState extends State<SinglePage> {
       _onComplete();
       setState(() {
         _position = _duration;
+        int i = ++widget.index;
+        widget.data = widget.dataList[i];
       });
     });
 
@@ -283,6 +282,6 @@ class SinglePageState extends State<SinglePage> {
   }
 
   void _onComplete() {
-    setState(() => _playerState = PlayerState.stopped);
+   next();
   }
 }

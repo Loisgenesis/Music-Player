@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:music_player/data.dart';
@@ -79,6 +80,7 @@ class HomeState extends State<Home> {
   String title;
   String link;
   int count = 0;
+
   @override
   void initState() {
     getData();
@@ -150,11 +152,10 @@ class HomeState extends State<Home> {
     String newTitle = datas.title.replaceAll(r"\", r'');
     return new InkWell(
       onTap: () {
-        singlePage(datas,count);
+        singlePage(datas, count);
       },
       child: new Padding(
-        padding:
-            EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(20.0),
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
@@ -168,11 +169,13 @@ class HomeState extends State<Home> {
       ),
     );
   }
-  void singlePage(Data data,int position) {
+
+  void singlePage(Data data, int position) {
     Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (BuildContext context) => new SinglePage(data,position,dataList),
+          builder: (BuildContext context) =>
+              new SinglePage(data, position, dataList),
         ));
   }
 
@@ -326,5 +329,3 @@ class HomeState extends State<Home> {
     getData();
   }
 }
-
-
