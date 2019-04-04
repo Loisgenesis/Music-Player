@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:music_player/data.dart';
@@ -72,6 +73,7 @@ class HomeState extends State<Home> {
   var _isRequestSent = true;
   var _isRequestFailed = false;
   var _isRequestConnection = false;
+  Data currentData;
   List<Data> dataList = [];
   String errorMessage;
   Xml2Json xml2json = new Xml2Json();
@@ -79,6 +81,14 @@ class HomeState extends State<Home> {
   String title;
   String link;
   int count = 0;
+  StreamSubscription streamSubscription;
+  AudioPlayer _audioPlayer;
+
+  @override
+  void dispose() {
+    streamSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -86,6 +96,7 @@ class HomeState extends State<Home> {
     super.initState();
   }
 
+  var actionIcon = "assets/images/pause.png";
   @override
   Widget build(BuildContext context) {
     count = 0;
@@ -126,7 +137,36 @@ class HomeState extends State<Home> {
                           ],
                         ),
                         onRefresh: refreshList,
-                      ));
+                      ),
+        bottomNavigationBar: currentData == null
+            ? SizedBox()
+            : new Container(
+                height: 60.0,
+                child: new Row(children: <Widget>[
+                  Container(
+                    width: 60.0,
+                    height: 60.0,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: NetworkImage(
+                            currentData.itunesImage,
+                          ),
+                          fit: BoxFit.cover),
+                    ),
+                  ),
+                  new SizedBox(
+                    width: 10.0,
+                  ),
+                  new Expanded(
+                    child: new Text(
+                      currentData.title.replaceAll(r"\", r''),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: new TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15.0),
+                    ),
+                  )
+                ])));
   }
 
   Future<Null> refreshList() async {
@@ -173,8 +213,15 @@ class HomeState extends State<Home> {
     Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (BuildContext context) =>
-              new SinglePage(data, position, dataList),
+          builder: (BuildContext context) => new SinglePage(
+                data: data,
+                index: position,
+                dataList: dataList,
+                streamSubscription: streamSubscription,
+                audioPlayer: _audioPlayer,
+                onPlayChange: (value) =>
+                    setState(() => this.currentData = value),
+              ),
         ));
   }
 

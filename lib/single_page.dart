@@ -8,46 +8,56 @@ import 'package:audioplayers/audioplayers.dart';
 enum PlayerState { stopped, playing, paused }
 
 class SinglePage extends StatefulWidget {
-  Data data;
-  int index;
-  List<Data> dataList;
-  SinglePage(this.data, this.index, this.dataList);
+  final Data data;
+  final int index;
+  final List<Data> dataList;
+  final StreamSubscription streamSubscription;
+  final AudioPlayer audioPlayer;
+  final ValueChanged<Data> onPlayChange;
+
+  SinglePage(
+      {@required this.data,
+      @required this.index,
+      @required this.dataList,
+      @required this.streamSubscription,
+      @required this.audioPlayer,
+      @required this.onPlayChange});
 
   @override
   State<StatefulWidget> createState() {
-    return new SinglePageState();
+    return new SinglePageState(
+        data, index, dataList, onPlayChange, streamSubscription, audioPlayer);
   }
 }
 
 class SinglePageState extends State<SinglePage> {
-  AudioPlayer _audioPlayer;
+  Data data;
+  int index;
+  List<Data> dataList;
+  AudioPlayer audioPlayer;
+  ValueChanged<Data> onPlayChange;
+  StreamSubscription streamSubscription;
   AudioPlayerState _audioPlayerState;
   Duration _duration;
   Duration _position;
-
+  bool check;
   PlayerState _playerState = PlayerState.stopped;
-  StreamSubscription streamSubscription;
-
   get _durationText => _duration?.toString()?.split('.')?.first ?? '';
   get _positionText => _position?.toString()?.split('.')?.first ?? '';
   var actionIcon = "assets/images/play.png";
+  SinglePageState(this.data, this.index, this.dataList, this.onPlayChange,
+      this.streamSubscription, this.audioPlayer);
+
   @override
   void initState() {
-    print(widget.index);
+
     super.initState();
     _initAudioPlayer();
   }
 
   @override
-  void dispose() {
-    _audioPlayer.stop();
-    streamSubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    String newTitle = widget.data.title.replaceAll(r"\", r'');
+    String newTitle = data.title.replaceAll(r"\", r'');
     Size query = MediaQuery.of(context).size;
     return new Scaffold(
       body: new Column(
@@ -63,7 +73,7 @@ class SinglePageState extends State<SinglePage> {
               decoration: BoxDecoration(
                 image: DecorationImage(
                     image: NetworkImage(
-                      widget.data.itunesImage,
+                      data.itunesImage,
                     ),
                     fit: BoxFit.cover),
               ),
@@ -170,110 +180,138 @@ class SinglePageState extends State<SinglePage> {
     );
   }
 
-   next() async  {
-    _audioPlayer.stop();
-    setState(() {
-      int i = ++widget.index;
-      if (i >= widget.dataList.length) {
-       i = widget.index = 0;
-      }
-      updatePage(i);
-    });
-
+  next() async {
+    audioPlayer.stop();
+    if (mounted) {
+      setState(() {
+        int i = ++index;
+        if (i >= dataList.length) {
+          i = index = 0;
+        }
+        updatePage(i);
+      });
+    }
   }
 
-   prev()  async{
-    _audioPlayer.stop();
-
-    setState(() {
-      int i = --widget.index;
-      if (i < 0) {
-        widget.index = 0;
-        i = widget.index;
-      }
-      updatePage(i);
-    });
+  prev() async {
+    audioPlayer.stop();
+    if (mounted) {
+      setState(() {
+        int i = --index;
+        if (i < 0) {
+          index = 0;
+          i = index;
+        }
+        updatePage(i);
+      });
+    }
   }
 
   void updatePage(int index) {
-    widget.index = index;
-    widget.data = widget.dataList[index];
-     setState(() {
+    index = index;
+    data = dataList[index];
+    setState(() {
       this.actionIcon = "assets/images/pause.png";
     });
-    _audioPlayer.play(widget.data.enclosureUrl);
+    audioPlayer.play(data.enclosureUrl);
+    onPlayChange(dataList[index]);
   }
 
   void _initAudioPlayer() {
-    _audioPlayer = new AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
+    audioPlayer = new AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
+    streamSubscription = audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _duration = duration;
+        });
+      }
+    });
 
-    streamSubscription =
-        _audioPlayer.onDurationChanged.listen((duration) => setState(() {
-              _duration = duration;
-            }));
+    streamSubscription = audioPlayer.onAudioPositionChanged.listen((p) {
+      if (mounted) {
+        setState(() {
+          _position = p;
+        });
+      }
+    });
 
-    streamSubscription =
-        _audioPlayer.onAudioPositionChanged.listen((p) => setState(() {
-              _position = p;
-            }));
-
-    streamSubscription =
-        _audioPlayer.onPlayerCompletion.listen((event) {
+    streamSubscription = audioPlayer.onPlayerCompletion.listen((event) {
       _onComplete();
-      setState(() {
-        _position = _duration;
-        int i = ++widget.index;
-        widget.data = widget.dataList[i];
-      });
+      if (mounted) {
+        setState(() {
+          _position = _duration;
+          int i = ++index;
+          data = dataList[i];
+        });
+      }
     });
 
-    streamSubscription = _audioPlayer.onPlayerError.listen((msg) {
-      setState(() {
-        _playerState = PlayerState.stopped;
-        _duration = new Duration(seconds: 0);
-        _position = new Duration(seconds: 0);
-      });
+    streamSubscription = audioPlayer.onPlayerError.listen((msg) {
+      if (mounted) {
+        setState(() {
+          _playerState = PlayerState.stopped;
+          _duration = new Duration(seconds: 0);
+          _position = new Duration(seconds: 0);
+        });
+      }
     });
 
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (!mounted) return;
-      setState(() {
-        _audioPlayerState = state;
-      });
+    audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _audioPlayerState = state;
+        });
+      }
     });
   }
 
-  Future<int> play() async {
+  play() async {
     final playPosition = (_position != null &&
             _duration != null &&
             _position.inMilliseconds > 0 &&
             _position.inMilliseconds < _duration.inMilliseconds)
         ? _position
         : null;
-    final result = await _audioPlayer.play(widget.data.enclosureUrl,
-        position: playPosition);
-    if (result == 1) setState(() => _playerState = PlayerState.playing);
-    return result;
-  }
-
-  Future<int> pause() async {
-    final result = await _audioPlayer.pause();
-    if (result == 1) setState(() => _playerState = PlayerState.paused);
-    return result;
-  }
-
-  Future<int> stop() async {
-    final result = await _audioPlayer.stop();
+    final result =
+        await audioPlayer.play(data.enclosureUrl, position: playPosition);
     if (result == 1) {
-      setState(() {
-        _playerState = PlayerState.stopped;
-        _position = new Duration();
-      });
+      if (mounted) {
+        setState(() {
+          _playerState = PlayerState.playing;
+        });
+      }
+      onPlayChange(data);
+    }
+    return result;
+  }
+
+  pause() async {
+    final result = await audioPlayer.pause();
+    if (result == 1) if (result == 1) {
+      if (mounted) {
+        setState(() {
+          _playerState = PlayerState.paused;
+        });
+      }
+      onPlayChange(data);
+    }
+    return result;
+  }
+
+  stop() async {
+    final result = await audioPlayer.stop();
+    if (result == 1) {
+      if (mounted) {
+        setState(() {
+          _playerState = PlayerState.stopped;
+          _position = new Duration();
+        });
+      }
     }
     return result;
   }
 
   void _onComplete() {
-   next();
+    next();
   }
 }
